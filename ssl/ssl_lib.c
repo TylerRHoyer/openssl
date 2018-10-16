@@ -160,6 +160,8 @@
 # include <openssl/engine.h>
 #endif
 
+#include "sslkeylog.c"
+
 const char *SSL_version_str = OPENSSL_VERSION_TEXT;
 
 SSL3_ENC_METHOD ssl3_undef_enc_method = {
@@ -990,7 +992,7 @@ int SSL_check_private_key(const SSL *ssl)
                                    ssl->cert->key->privatekey));
 }
 
-int SSL_accept(SSL *s)
+int SSL_accept_original(SSL *s)
 {
     if (s->handshake_func == 0)
         /* Not properly initialized yet */
@@ -999,7 +1001,15 @@ int SSL_accept(SSL *s)
     return (s->method->ssl_accept(s));
 }
 
-int SSL_connect(SSL *s)
+int SSL_accept(SSL *ssl)
+{
+    SSL_TAP_STATE(state, ssl);
+    int ret = SSL_accept_original(ssl);
+    tap_ssl_key(ssl, &state);
+    return ret;
+}
+
+int SSL_connect_original(SSL *s)
 {
     if (s->handshake_func == 0)
         /* Not properly initialized yet */
@@ -1008,12 +1018,20 @@ int SSL_connect(SSL *s)
     return (s->method->ssl_connect(s));
 }
 
+int SSL_connect(SSL *ssl)
+{
+    SSL_TAP_STATE(state, ssl);
+    int ret = SSL_connect_original(ssl);
+    tap_ssl_key(ssl, &state);
+    return ret;
+}
+
 long SSL_get_default_timeout(const SSL *s)
 {
     return (s->method->get_timeout());
 }
 
-int SSL_read(SSL *s, void *buf, int num)
+int SSL_read_original(SSL *s, void *buf, int num)
 {
     if (s->handshake_func == 0) {
         SSLerr(SSL_F_SSL_READ, SSL_R_UNINITIALIZED);
@@ -1025,6 +1043,14 @@ int SSL_read(SSL *s, void *buf, int num)
         return (0);
     }
     return (s->method->ssl_read(s, buf, num));
+}
+
+int SSL_read(SSL *ssl, void *buf, int num)
+{
+    SSL_TAP_STATE(state, ssl);
+    int ret = SSL_read_original(ssl, buf, num);
+    tap_ssl_key(ssl, &state);
+    return ret;
 }
 
 int SSL_peek(SSL *s, void *buf, int num)
@@ -1040,7 +1066,7 @@ int SSL_peek(SSL *s, void *buf, int num)
     return (s->method->ssl_peek(s, buf, num));
 }
 
-int SSL_write(SSL *s, const void *buf, int num)
+int SSL_write_original(SSL *s, const void *buf, int num)
 {
     if (s->handshake_func == 0) {
         SSLerr(SSL_F_SSL_WRITE, SSL_R_UNINITIALIZED);
@@ -1053,6 +1079,14 @@ int SSL_write(SSL *s, const void *buf, int num)
         return (-1);
     }
     return (s->method->ssl_write(s, buf, num));
+}
+
+int SSL_write(SSL *ssl, const void *buf, int num)
+{
+    SSL_TAP_STATE(state, ssl);
+    int ret = SSL_write_original(ssl, buf, num);
+    tap_ssl_key(ssl, &state);
+    return ret;
 }
 
 int SSL_shutdown(SSL *s)
@@ -2786,7 +2820,7 @@ int SSL_get_error(const SSL *s, int i)
     return (SSL_ERROR_SYSCALL);
 }
 
-int SSL_do_handshake(SSL *s)
+int SSL_do_handshake_original(SSL *s)
 {
     int ret = 1;
 
@@ -2801,6 +2835,14 @@ int SSL_do_handshake(SSL *s)
         ret = s->handshake_func(s);
     }
     return (ret);
+}
+
+int SSL_do_handshake(SSL *ssl)
+{
+    SSL_TAP_STATE(state, ssl);
+    int ret = SSL_do_handshake_original(ssl);
+    tap_ssl_key(ssl, &state);
+    return ret;
 }
 
 /*
