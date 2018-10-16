@@ -9,11 +9,7 @@
  *  cc sslkeylog.c -shared -o libsslkeylog.so -fPIC -ldl
  *  SSLKEYLOGFILE=premaster.txt LD_PRELOAD=./libsslkeylog.so openssl ...
  */
-#define _GNU_SOURCE /* for RTLD_NEXT */
-#include <dlfcn.h>
 #include <openssl/objects.h>
-#include <fcntl.h>
-#include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
