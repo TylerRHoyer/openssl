@@ -52,7 +52,7 @@ static void dump_to_fd(int fd, unsigned char *client_random,
     line[pos++] = '\n';
     /* Write at once rather than using buffered I/O. Perhaps there is concurrent
      * write access so do not write hex values one by one. */
-    write(fd, line, pos);
+    _write(fd, line, pos);
 }
 
 static void init_keylog_file(void)
@@ -62,10 +62,10 @@ static void init_keylog_file(void)
 
     const char *filename = getenv("SSLKEYLOGFILE");
     if (filename) {
-        keylog_file_fd = open(filename, O_WRONLY | O_APPEND | O_CREAT, 0644);
-        if (keylog_file_fd >= 0 && lseek(keylog_file_fd, 0, SEEK_END) == 0) {
+        keylog_file_fd = _open(filename, O_WRONLY | O_APPEND | O_CREAT, 0644);
+        if (keylog_file_fd >= 0 && _lseek(keylog_file_fd, 0, SEEK_END) == 0) {
             /* file is opened successfully and there is no data (pos == 0) */
-            write(keylog_file_fd, FIRSTLINE, FIRSTLINE_LEN);
+            _write(keylog_file_fd, FIRSTLINE, FIRSTLINE_LEN);
         }
     }
 }
